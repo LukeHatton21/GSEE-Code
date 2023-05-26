@@ -1,0 +1,115 @@
+from gsee.climatedata_interface.interface import run_interface
+
+run_interface(
+    ghi_data=('SWGDN2015.nc','global_horizontal'),
+    outfile = 'gsee_output.nc',
+    diffuse_data = ('SWGDN2015.nc','global_horizontal'),
+    params=dict(tilt=35, azim=180, tracking=0, capacity=1000),
+    frequency='H',
+    temp_data=('T2M_2015.nc', 'temperature'),
+    pdfs_file=None,
+    num_cores=1,
+)
+
+---------------------------------------------------------------------------
+KeyError                                  Traceback (most recent call last)
+/var/folders/5b/_cf1jf653ql5gqhr5rpgfvkc0000gn/T/ipykernel_1807/3850261040.py in <module>
+      1 from gsee.climatedata_interface.interface import run_interface
+      2 
+----> 3 run_interface(
+      4     ghi_data=('SWGDN2015.nc','global_horizontal'),
+      5     outfile = 'gsee_output.nc',
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/climatedata_interface/interface.py in run_interface(ghi_data, outfile, params, frequency, diffuse_data, temp_data, timeformat, pdfs_file, num_cores)
+    199         print('{} does not yet exist --> Computing in '.format(outfile.split('/', -1)[-1]), end='')
+    200 
+--> 201         ds_pv = run_interface_from_dataset(
+    202             data=ds_merged,
+    203             params=params,
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/climatedata_interface/interface.py in run_interface_from_dataset(data, params, frequency, pdfs_file, num_cores)
+     96         print('Single core mode')
+     97         for i, coords in enumerate(coord_list):
+---> 98             resample_for_gsee(
+     99                 data.sel(lat=coords[0], lon=coords[1]),
+    100                 frequency, params, i, coords, shr_mem, prog_mem,
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/climatedata_interface/pre_gsee_processing.py in resample_for_gsee(ds, frequency, params, i, coords, shr_mem, prog_mem, ds_pdfs)
+    118 
+    119     if ds_pdfs is None:
+--> 120         return _resample_without_pdfs(df, frequency, params, i, coords, shr_mem, prog_mem)
+    121     else:
+    122         return _resample_with_pdfs(df, frequency, params, i, coords, shr_mem, prog_mem, ds_pdfs)
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/climatedata_interface/pre_gsee_processing.py in _resample_without_pdfs(df, frequency, params, i, coords, shr_mem, prog_mem)
+    142                     data=df, coords=coords, **params)
+    143         else:
+--> 144             pv = add_kd_run_gsee(df, coords, frequency, params)
+    145 
+    146     return_pv(pv, shr_mem, prog_mem, coords, i)
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/climatedata_interface/pre_gsee_processing.py in add_kd_run_gsee(df, coords, frequency, params)
+     63     with warnings.catch_warnings():
+     64         warnings.simplefilter('ignore')
+---> 65         pv_h = pv_model.run_model(data=tmp_df_kd, coords=coords, **params)
+     66     if frequency != 'H':
+     67         pv = pv_h.resample(rule='1D').sum()
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/pv.py in run_model(data, coords, tilt, azim, tracking, capacity, technology, system_loss, angles, include_raw_data, **kwargs)
+    210     # other combinations of data like DNI + global horizontal
+    211     # NB: aperture_irradiance expects azim/tilt in radians!
+--> 212     irrad = trigon.aperture_irradiance(dir_horiz, diff_horiz, coords,
+    213                                        tracking=tracking,
+    214                                        azimuth=math.radians(azim),
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/trigon.py in aperture_irradiance(direct, diffuse, coords, tilt, azimuth, tracking, albedo, dni_only, angles)
+    233     if angles is None:
+    234         sunrise_set_times = sun_rise_set_times(direct.index, coords)
+--> 235         angles = sun_angles(direct.index, coords, sunrise_set_times)
+    236     # 2. Calculate direct normal irradiance
+    237     dni = (direct * (angles['duration'] / 60)) / np.cos(angles['sun_zenith'])
+
+~/opt/anaconda3/lib/python3.9/site-packages/gsee/trigon.py in sun_angles(datetime_index, coords, rise_set_times)
+    102         obs.date = item
+    103         # rise/set times are indexed by day, so need to adjust lookup
+--> 104         rise_time, set_time = rise_set_times.loc[item.date()]
+    105 
+    106         # Set angles, sun altitude and duration based on hour of day:
+
+~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexing.py in __getitem__(self, key)
+    929 
+    930             maybe_callable = com.apply_if_callable(key, self.obj)
+--> 931             return self._getitem_axis(maybe_callable, axis=axis)
+    932 
+    933     def _is_scalar_access(self, key: tuple):
+
+~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexing.py in _getitem_axis(self, key, axis)
+   1162         # fall thru to straight lookup
+   1163         self._validate_key(key, axis)
+-> 1164         return self._get_label(key, axis=axis)
+   1165 
+   1166     def _get_slice_axis(self, slice_obj: slice, axis: int):
+
+~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexing.py in _get_label(self, label, axis)
+   1111     def _get_label(self, label, axis: int):
+   1112         # GH#5667 this will fail if the label is not present in the axis.
+-> 1113         return self.obj.xs(label, axis=axis)
+   1114 
+   1115     def _handle_lowerdim_multi_index_axis0(self, tup: tuple):
+
+~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/generic.py in xs(self, key, axis, level, drop_level)
+   3774                 raise TypeError(f"Expected label or tuple of labels, got {key}") from e
+   3775         else:
+-> 3776             loc = index.get_loc(key)
+   3777 
+   3778             if isinstance(loc, np.ndarray):
+
+~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexes/datetimes.py in get_loc(self, key, method, tolerance)
+    698         else:
+    699             # unrecognized type
+--> 700             raise KeyError(key)
+    701 
+    702         try:
+
+KeyError: datetime.date(2015, 1, 1)
+
